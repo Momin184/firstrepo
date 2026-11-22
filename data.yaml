@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 3
+names: ['head', 'helmet', 'person']
+
+roboflow:
+  workspace: syed-shoeb
+  project: some-lfw9l
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/syed-shoeb/some-lfw9l/dataset/2
