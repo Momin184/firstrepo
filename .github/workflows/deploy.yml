@@ -1,11 +1,11 @@
 
+
 name: Deploy Website to AWS EC2
 
 on:
   push:
     branches:
       - main
-
   workflow_dispatch:
 
 jobs:
@@ -30,6 +30,15 @@ jobs:
 
           ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
 
+      - name: Check EC2 Connection
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+        run: |
+          ssh -i ~/.ssh/ec2_key \
+            ${EC2_USERNAME}@${EC2_HOST} \
+            "whoami && hostname"
+
       - name: Deploy Website
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -41,6 +50,26 @@ jobs:
             -e "ssh -i ~/.ssh/ec2_key" \
             ./ ${EC2_USERNAME}@${EC2_HOST}:/var/www/cloudtech/
 
+      - name: Debug Deployment
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+        run: |
+          ssh -i ~/.ssh/ec2_key \
+            ${EC2_USERNAME}@${EC2_HOST} \
+            'echo "===== REMOTE SERVER =====";
+             hostname;
+             echo "===== DIRECTORY =====";
+             ls -lah /var/www/cloudtech/;
+             echo "===== INDEX FILE =====";
+             if [ -f /var/www/cloudtech/index.html ]; then
+               echo "File exists"
+               wc -c /var/www/cloudtech/index.html
+             else
+               echo "File does not exist"
+               exit 1
+             fi'
+
       - name: Verify Deployment
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -48,4 +77,9 @@ jobs:
         run: |
           ssh -i ~/.ssh/ec2_key \
             ${EC2_USERNAME}@${EC2_HOST} \
-            "test -s /var/www/cloudtech/index.html && echo 'Deployment successful!'"
+            "if [ -s /var/www/cloudtech/index.html ]; then
+               echo 'Deployment successful!'
+             else
+               echo 'ERROR: index.html missing or empty!'
+               exit 1
+             fi"
